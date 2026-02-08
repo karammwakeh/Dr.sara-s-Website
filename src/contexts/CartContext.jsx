@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from "@/lib/supabase";
 import { useToast } from '@/components/ui/use-toast';
 
 const CartContext = createContext();
@@ -40,12 +41,12 @@ export const CartProvider = ({ children }) => {
             : item
         );
       }
-      
+
       toast({
         title: 'تمت الإضافة للسلة',
         description: `تمت إضافة ${product.title} إلى السلة`,
       });
-      
+
       return [...prevItems, { ...product, quantity }];
     });
   };
@@ -63,7 +64,7 @@ export const CartProvider = ({ children }) => {
       removeFromCart(productId);
       return;
     }
-    
+
     setItems(prevItems =>
       prevItems.map(item =>
         item.id === productId ? { ...item, quantity } : item

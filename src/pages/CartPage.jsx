@@ -75,7 +75,7 @@ const CartPage = () => {
                 >
                   <div className="flex gap-6">
                     <img
-                      src={item.image}
+                      src={item.image_url}
                       alt={item.title}
                       className="w-24 h-24 object-cover rounded-lg"
                     />

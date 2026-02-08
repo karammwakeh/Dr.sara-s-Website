@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from "@/lib/supabase";
 import { useToast } from '@/components/ui/use-toast';
 import { IMAGES } from '@/lib/theme';
 
@@ -25,77 +26,96 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  const fetchUserProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) console.error('Profile fetch error:', error.message);
+    return data || null;
+  };
+
   const login = async (email, password) => {
-    try {
-      // TODO: Replace with Supabase authentication
-      const mockUser = {
-        id: '1',
-        email,
-        full_name: 'Demo User',
-        role: email.includes('admin') ? 'admin' : 'user',
-        profile_photo_url: IMAGES.testimonial1
-      };
-      
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast({
-        title: 'تم تسجيل الدخول بنجاح',
-        description: 'مرحباً بعودتك!',
-      });
-      
-      return mockUser;
-    } catch (error) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
       toast({
         title: 'خطأ في تسجيل الدخول',
         description: error.message,
         variant: 'destructive',
       });
-      throw error;
+
+      return null;
     }
+
+    const profile = await fetchUserProfile(data.user.id);
+    localStorage.setItem('user', JSON.stringify(profile));
+    setUser(profile);
+
+    toast({
+      title: 'تم تسجيل الدخول بنجاح',
+      description: 'مرحباً بعودتك!',
+    });
+
+    return profile;
   };
 
   const signup = async (email, password, fullName) => {
-    try {
-      // TODO: Replace with Supabase authentication
-      const mockUser = {
-        id: Date.now().toString(),
-        email,
-        full_name: fullName,
-        role: 'user',
-        profile_photo_url: null
-      };
-      
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast({
-        title: 'تم إنشاء الحساب بنجاح',
-        description: 'مرحباً بك في منصة د. سارة',
-      });
-      
-      return mockUser;
-    } catch (error) {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        full_name: fullName
+      }
+    });
+
+    if (error) {
       toast({
         title: 'خطأ في إنشاء الحساب',
         description: error.message,
         variant: 'destructive',
       });
-      throw error;
+
+      return null;
+    }
+
+    const profile = await fetchUserProfile(data.user.id);
+    localStorage.setItem('user', JSON.stringify(profile));
+    setUser(profile);
+
+    toast({
+      title: 'تم إنشاء الحساب بنجاح',
+      description: 'مرحباً بك في منصة د. سارة',
+    });
+
+    return profile;
+  };
+
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      console.error(error.message);
+    } else {
+      localStorage.removeItem('user');
+      setUser(null);
+      toast({
+        title: 'تم تسجيل الخروج',
+        description: 'نراك قريباً!',
+      });
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    toast({
-      title: 'تم تسجيل الخروج',
-      description: 'نراك قريباً!',
-    });
-  };
-
   const resetPassword = async (email) => {
-    // TODO: Replace with Supabase password reset
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://localhost:3000',
+    });
+
     toast({
       title: 'تم إرسال رابط إعادة التعيين',
       description: 'تحقق من بريدك الإلكتروني',

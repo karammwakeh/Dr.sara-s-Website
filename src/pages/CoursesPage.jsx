@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from "@/lib/supabase";
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { Clock, Users, Star, ShoppingCart, PlayCircle, BookOpen } from 'lucide-react';
@@ -10,56 +11,84 @@ import { IMAGES } from '@/lib/theme';
 import { Link } from 'react-router-dom';
 
 const CoursesPage = () => {
+  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState([]);
+  const [products, setProducts] = useState([]);
   const { language } = useLanguage();
   const { addToCart } = useCart();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('courses');
 
-  const courses = [
-    {
-      id: 'c1',
-      title: language === 'ar' ? 'رحلة الوعي الذاتي' : 'Journey to Self-Awareness',
-      description: language === 'ar' ? 'اكتشف ذاتك الحقيقية وحرر قدراتك الكامنة في هذه الدورة المكثفة.' : 'Discover your true self and unleash your potential in this intensive course.',
-      image: IMAGES.course1,
-      price: 299,
-      duration: '8 Weeks',
-      students: 120,
-      rating: 4.9,
-      lessons: 24,
-      category: 'Self Development'
-    },
-    {
-      id: 'c2',
-      title: language === 'ar' ? 'فن إدارة العلاقات' : 'Art of Relationship Management',
-      description: language === 'ar' ? 'تعلم مهارات التواصل الفعال وبناء علاقات صحية ومثمرة.' : 'Learn effective communication skills and build healthy, fruitful relationships.',
-      image: IMAGES.course2,
-      price: 199,
-      duration: '6 Weeks',
-      students: 85,
-      rating: 4.8,
-      lessons: 18,
-      category: 'Relationships'
-    },
-  ];
+  // const courses = [
+  //   {
+  //     id: 'c1',
+  //     title: language === 'ar' ? 'رحلة الوعي الذاتي' : 'Journey to Self-Awareness',
+  //     description: language === 'ar' ? 'اكتشف ذاتك الحقيقية وحرر قدراتك الكامنة في هذه الدورة المكثفة.' : 'Discover your true self and unleash your potential in this intensive course.',
+  //     image: IMAGES.course1,
+  //     price: 299,
+  //     duration: '8 Weeks',
+  //     students: 120,
+  //     rating: 4.9,
+  //     lessons: 24,
+  //     category: 'Self Development'
+  //   },
+  //   {
+  //     id: 'c2',
+  //     title: language === 'ar' ? 'فن إدارة العلاقات' : 'Art of Relationship Management',
+  //     description: language === 'ar' ? 'تعلم مهارات التواصل الفعال وبناء علاقات صحية ومثمرة.' : 'Learn effective communication skills and build healthy, fruitful relationships.',
+  //     image: IMAGES.course2,
+  //     price: 199,
+  //     duration: '6 Weeks',
+  //     students: 85,
+  //     rating: 4.8,
+  //     lessons: 18,
+  //     category: 'Relationships'
+  //   },
+  // ];
 
-  const products = [
-    {
-      id: 'p1',
-      title: language === 'ar' ? 'كتاب: التغيير يبدأ الآن' : 'E-Book: Change Starts Now',
-      description: language === 'ar' ? 'دليل عملي شامل للتحول الشخصي بخطوات بسيطة.' : 'A comprehensive practical guide for personal transformation in simple steps.',
-      price: 29,
-      type: 'E-Book',
-      image: IMAGES.product1,
-    },
-    {
-      id: 'p2',
-      title: language === 'ar' ? 'مفكرة الإنجاز 2024' : 'Achievement Planner 2024',
-      description: language === 'ar' ? 'أداة تخطيط رقمية لمساعدتك على تنظيم وقتك وتحقيق أهدافك.' : 'Digital planning tool to help you organize your time and achieve your goals.',
-      price: 15,
-      type: 'Digital Tool',
-      image: IMAGES.product2,
-    },
-  ];
+  // const products = [
+  //   {
+  //     id: 'p1',
+  //     title: language === 'ar' ? 'كتاب: التغيير يبدأ الآن' : 'E-Book: Change Starts Now',
+  //     description: language === 'ar' ? 'دليل عملي شامل للتحول الشخصي بخطوات بسيطة.' : 'A comprehensive practical guide for personal transformation in simple steps.',
+  //     price: 29,
+  //     type: 'E-Book',
+  //     image: IMAGES.product1,
+  //   },
+  //   {
+  //     id: 'p2',
+  //     title: language === 'ar' ? 'مفكرة الإنجاز 2024' : 'Achievement Planner 2024',
+  //     description: language === 'ar' ? 'أداة تخطيط رقمية لمساعدتك على تنظيم وقتك وتحقيق أهدافك.' : 'Digital planning tool to help you organize your time and achieve your goals.',
+  //     price: 15,
+  //     type: 'Digital Tool',
+  //     image: IMAGES.product2,
+  //   },
+  // ];
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const { data: courses, error } = await supabase.from("courses").select("*");
+      if (error) {
+        console.error("Error fetching courses:", error.message);
+      } else {
+        setCourses(courses);
+      }
+      setLoading(false);
+    };
+
+    const fetchProducts = async () => {
+      const { data: products, error } = await supabase.from("products").select("*");
+      if (error) {
+        console.error("Error fetching products:", error.message);
+      } else {
+        setProducts(products);
+      }
+      setLoading(false);
+    };
+
+    fetchCourses();
+    fetchProducts();
+  }, []);
 
   const handleEnroll = () => {
      toast({
@@ -123,7 +152,7 @@ const CoursesPage = () => {
                   className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group border border-transparent hover:border-secondary/20"
                 >
                   <div className="relative h-64 overflow-hidden">
-                    <img src={course.image} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={course.image_url} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-primary shadow-sm">
                       {course.category}
                     </div>
@@ -160,7 +189,7 @@ const CoursesPage = () => {
                   className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100"
                 >
                   <div className="h-64 bg-gray-100 relative overflow-hidden group">
-                     <img src={product.image} alt={product.title} className="w-full h-full object-cover" />
+                     <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button 
                           onClick={() => addToCart(product)}

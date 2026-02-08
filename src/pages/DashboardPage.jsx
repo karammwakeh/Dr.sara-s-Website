@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '@/lib/supabase';
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { BookOpen, Calendar, ShoppingBag, User } from 'lucide-react';
@@ -9,23 +10,64 @@ const DashboardPage = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
 
+  const { data: bookings, b_err } = supabase
+    .from("bookings")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (b_err) {
+    console.log(b_err.message);
+  }
+
+  const { data: course_enrollments, c_err } = supabase
+    .from("course_enrollments")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (c_err) {
+    console.log(c_err.message);
+  }
+
+  const { data: product_purchases, p_err } = supabase
+    .from("product_purchases")
+    .select("*")
+    .eq("user_id", user.id);
+
+  if (p_err) {
+    console.log(p_err.message);
+  }
+
+  let enrolled = course_enrollments?.length ?? 0;
+
+  let product_purchase_count = product_purchases?.length ?? 0;
+
+  let upcoming = bookings?.filter(b => {
+    let date = new Date(b.booking_date);
+    date.setHours(0, 0, 0, 0);
+
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return date.getTime() > today.getTime();
+  }).length ?? 0;
+
   const stats = [
     {
       icon: BookOpen,
       title: language === 'ar' ? 'الدورات المسجلة' : 'Enrolled Courses',
-      value: '3',
+      value: enrolled,
       color: 'from-primary to-secondary',
     },
     {
       icon: Calendar,
       title: language === 'ar' ? 'الجلسات القادمة' : 'Upcoming Sessions',
-      value: '2',
+      value: upcoming,
       color: 'from-secondary to-tertiary',
     },
     {
       icon: ShoppingBag,
       title: language === 'ar' ? 'المنتجات المشتراة' : 'Purchased Products',
-      value: '5',
+      value: product_purchase_count,
       color: 'from-primary to-tertiary',
     },
   ];
@@ -43,7 +85,7 @@ const DashboardPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12"
           >
-            <h1 
+            <h1
               className="text-4xl font-bold text-dark mb-2"
               style={{ fontFamily: language === 'ar' ? 'Cairo, sans-serif' : 'serif' }}
             >
@@ -77,11 +119,38 @@ const DashboardPage = () => {
             <h2 className="text-2xl font-bold text-dark mb-6">
               {language === 'ar' ? 'الدورات الخاصة بك' : 'Your Courses'}
             </h2>
-            <p className="text-dark/70">
-              {language === 'ar' 
-                ? 'ستظهر دوراتك المسجلة هنا'
-                : 'Your enrolled courses will appear here'}
-            </p>
+            {
+              !course_enrollments || course_enrollments.length === 0 ? (
+                <p className="text-dark/70">
+                  {language === 'ar'
+                    ? 'ستظهر دوراتك المسجلة هنا'
+                    : 'Your enrolled courses will appear here'}
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {course_enrollments.map((course) => (
+                    <div
+                      key={course.id}
+                      className="border rounded-lg p-4 hover:shadow-lg transition-shadow"
+                    >
+                      {course.image_url && (
+                        <img
+                          src={course.image_url}
+                          alt={language === 'ar' ? course.title_ar : course.title_en}
+                          className="w-full h-40 object-cover rounded-md mb-2"
+                        />
+                      )}
+                      <h3 className="text-lg font-semibold">
+                        {language === 'ar' ? course.title_ar : course.title_en}
+                      </h3>
+                      {course.duration && (
+                        <p className="text-sm text-gray-500">{course.duration}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
+            }
           </div>
         </div>
       </div>

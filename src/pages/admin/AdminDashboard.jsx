@@ -1,11 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from "@/lib/supabase";
 import { Helmet } from 'react-helmet';
 import { motion } from 'framer-motion';
 import { DollarSign, Users, BookOpen, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const AdminDashboard = () => {
+  const [courses, setCourses] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [count, setUserCount] = useState(0);
   const { language } = useLanguage();
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      const { data: courses, error } = await supabase.from("courses").select("*");
+      if (error) {
+        console.error("Error fetching courses:", error.message);
+      } else {
+        setCourses(courses);
+      }
+      setLoading(false);
+    };
+
+    const fetchProducts = async () => {
+      const { data: products, error } = await supabase.from("products").select("*");
+      if (error) {
+        console.error("Error fetching products:", error.message);
+      } else {
+        setProducts(products);
+      }
+      setLoading(false);
+    };
+
+    const fetchBookings = async () => {
+      const { data: bookings, error } = await supabase.from("bookings").select("*");
+      if (error) {
+        console.error("Error fetching bookings:", error.message);
+      } else {
+        setBookings(bookings);
+      }
+      setLoading(false);
+    };
+
+    const countUsers = async () => {
+      const { count, c_err } = await supabase
+        .from("users")
+        .select("*", { count: "exact", head: true });
+
+      if (c_err) {
+        console.error(c_err.message);
+      } else {
+        setUserCount(count);
+      }
+
+      setLoading(false);
+    };
+
+    countUsers();
+    fetchCourses();
+    fetchBookings();
+    fetchProducts();
+  }, []);
+
+  const activeCourses = courses.filter(c => c.is_active).length;
+  const bookingsThisMonth = bookings.filter(b => {
+    let date = new Date(b.booking_date);
+    date.setHours(0, 0, 0, 0);
+
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    return date >= startOfMonth && date <= today;
+  }).length;
 
   const stats = [
     {
@@ -18,21 +87,21 @@ const AdminDashboard = () => {
     {
       icon: Users,
       title: language === 'ar' ? 'إجمالي المستخدمين' : 'Total Users',
-      value: '5,234',
+      value: count,
       change: '+8.2%',
       color: 'from-blue-500 to-blue-600',
     },
     {
       icon: BookOpen,
       title: language === 'ar' ? 'الدورات النشطة' : 'Active Courses',
-      value: '24',
+      value: activeCourses,
       change: '+4',
       color: 'from-primary to-secondary',
     },
     {
       icon: Calendar,
       title: language === 'ar' ? 'الحجوزات هذا الشهر' : 'Bookings This Month',
-      value: '156',
+      value: bookingsThisMonth,
       change: '+18.3%',
       color: 'from-orange-500 to-orange-600',
     },
