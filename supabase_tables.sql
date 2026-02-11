@@ -93,6 +93,137 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS course_enrollments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id),
+  course_id UUID REFERENCES courses(id),
+  enrolled_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+
+-- =========================
+-- CART TABLE
+-- =========================
+CREATE TABLE cart (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL,
+    product_id UUID,
+
+    quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+
+    added_at TIMESTAMP DEFAULT NOW(),
+
+    CONSTRAINT fk_cart_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_cart_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_cart_course
+        FOREIGN KEY (course_id)
+        REFERENCES courses(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_cart_item
+        UNIQUE (user_id, product_id, course_id)
+);
+
+-- =========================
+-- ORDERS TABLE
+-- =========================
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    user_id UUID NOT NULL,
+    total_amount NUMERIC(10,2) NOT NULL,
+
+    status TEXT DEFAULT 'pending'
+        CHECK (status IN ('pending','paid','cancelled','refunded')),
+
+    created_at TIMESTAMP DEFAULT NOW(),
+
+    CONSTRAINT fk_orders_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+-- =========================
+-- ORDER ITEMS TABLE
+-- =========================
+CREATE TABLE order_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    order_id UUID NOT NULL,
+    product_id UUID,
+
+    quantity INT NOT NULL DEFAULT 1,
+    price NUMERIC(10,2) NOT NULL,
+
+    CONSTRAINT fk_order_items_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_order_items_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_order_items_course
+        FOREIGN KEY (course_id)
+        REFERENCES courses(id)
+        ON DELETE CASCADE
+);
+
+-- =========================
+-- PAYMENTS TABLE
+-- =========================
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    order_id UUID REFERENCES orders(id) NULL,       -- nullable if it's an enrollment payment
+    enrollment_id UUID REFERENCES enrollments(id) NULL, -- nullable if it's an order payment
+    user_id UUID NOT NULL,
+
+    amount NUMERIC(10,2) NOT NULL,
+
+    payment_method TEXT NOT NULL
+        CHECK (payment_method IN ('paypal','visa','mastercard')),
+
+    payment_status TEXT DEFAULT 'pending'
+        CHECK (payment_status IN ('pending','completed','failed','refunded')),
+
+    transaction_id TEXT,
+
+    paid_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+
+    CONSTRAINT fk_payments_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_payments_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+-- =========================
+-- INDEXES FOR PERFORMANCE
+-- =========================
+CREATE INDEX idx_cart_user ON cart(user_id);
+CREATE INDEX idx_orders_user ON orders(user_id);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_payments_order ON payments(order_id);
+
+
 -- ============================================
 -- إدراج بيانات تجريبية للدورات
 -- ============================================
@@ -109,12 +240,18 @@ VALUES
 ('كتاب: التغيير يبدأ الآن', 'E-Book: Change Starts Now', 'دليل عملي شامل للتحول الشخصي بخطوات بسيطة.', 'A comprehensive practical guide for personal transformation in simple steps.', 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&q=80', 29, 'E-Book', TRUE),
 ('مفكرة الإنجاز 2024', 'Achievement Planner 2024', 'أداة تخطيط رقمية لمساعدتك على تنظيم وقتك وتحقيق أهدافك.', 'Digital planning tool to help you organize your time and achieve your goals.', 'https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=800&q=80', 15, 'Digital Tool', TRUE);
 
+INSERT into users (id, full_name, role, email)
+VALUES (gen_random_uuid(), 'Dr. Sara', 'admin', 'admin@gmail.com');
+
 -- ============================================
 -- Row Level Security (RLS) — حماية البيانات
 -- ============================================
 
 -- المستخدمون: كلهم يقدروا يقرأون، كل واحد يكتب بس لنفسه
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow signup insert" ON users
+FOR INSERT
+WITH CHECK (true);
 CREATE POLICY "Public read users" ON users FOR SELECT USING (true);
 CREATE POLICY "Insert own user" ON users FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -143,3 +280,17 @@ CREATE POLICY "Public read newsletter" ON newsletter_subscribers FOR SELECT USIN
 -- المدونة: عامة للقراءة
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read blog" ON blog_posts FOR SELECT USING (true);
+
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.users (id, email, full_name, role)
+  values (new.id, new.email, '', 'user');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user();

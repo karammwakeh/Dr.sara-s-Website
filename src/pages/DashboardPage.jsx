@@ -28,18 +28,18 @@ const DashboardPage = () => {
     console.log(c_err.message);
   }
 
-  const { data: product_purchases, p_err } = supabase
-    .from("product_purchases")
+  const { data: orders, o_err } = supabase
+    .from("orders")
     .select("*")
     .eq("user_id", user.id);
 
-  if (p_err) {
-    console.log(p_err.message);
+  if (o_err) {
+    console.log(o_err.message);
   }
 
   let enrolled = course_enrollments?.length ?? 0;
 
-  let product_purchase_count = product_purchases?.length ?? 0;
+  let order_count = orders?.length ?? 0;
 
   let upcoming = bookings?.filter(b => {
     let date = new Date(b.booking_date);
@@ -67,7 +67,7 @@ const DashboardPage = () => {
     {
       icon: ShoppingBag,
       title: language === 'ar' ? 'المنتجات المشتراة' : 'Purchased Products',
-      value: product_purchase_count,
+      value: order_count,
       color: 'from-primary to-tertiary',
     },
   ];

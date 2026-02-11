@@ -12,7 +12,7 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { user, logout, isAdmin } = useAuth();
-  const { getItemCount } = useCart();
+  const { cart } = useCart();
   const { t, toggleLanguage, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -97,9 +97,9 @@ const Header = () => {
             <Link to="/cart" className="relative">
               <Button variant="ghost" size="icon" className="rounded-full hover:bg-quinary hover:text-primary text-dark">
                 <ShoppingCart className="h-5 w-5" />
-                {getItemCount() > 0 && (
+                {cart.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-in zoom-in">
-                    {getItemCount()}
+                    {cart.length}
                   </span>
                 )}
               </Button>

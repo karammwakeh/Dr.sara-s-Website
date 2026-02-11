@@ -192,7 +192,7 @@ const CoursesPage = () => {
                      <img src={product.image_url} alt={product.title} className="w-full h-full object-cover" />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button 
-                          onClick={() => addToCart(product)}
+                          onClick={() => addToCart(product.id)}
                           className="bg-secondary text-white font-bold hover:bg-white hover:text-primary"
                         >
                           {language === 'ar' ? 'أضف للسلة' : 'Quick Add'}
@@ -206,7 +206,7 @@ const CoursesPage = () => {
                     <div className="flex items-center justify-between mt-4">
                       <span className="text-2xl font-bold text-primary">${product.price}</span>
                       <Button 
-                        onClick={() => addToCart(product)}
+                        onClick={() => addToCart(product.id)}
                         variant="outline" 
                         size="sm"
                         className="border-primary text-primary hover:bg-primary hover:text-white"
