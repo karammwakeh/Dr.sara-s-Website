@@ -177,7 +177,7 @@ psql -d drsara_db
 INSERT INTO admins (email, password_hash, full_name, role) 
 VALUES (
     'dr.sara@example.com',
-    '$2b$10$YrP8pYGVgQX5TKvQXQZ3K.F5H8zZqYn0YJqZ3qpQTKvQYGVgQX5TK',
+    '$2b$10$NPJPKA16HjmuhWSanXyjZ.kpr4GYAYZ4HuOCfa6FnaGK2CxVJokfi',
     'د. سارة',
     'super_admin'
 );
